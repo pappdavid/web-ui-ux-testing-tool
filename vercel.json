@@ -1,0 +1,11 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install && npm run test:install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "PLAYWRIGHT_BROWSERS_PATH": "0"
+  }
+}
+

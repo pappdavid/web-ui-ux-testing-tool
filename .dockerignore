@@ -1,0 +1,16 @@
+node_modules
+.next
+.env
+.env*.local
+.git
+.gitignore
+README.md
+DEPLOYMENT.md
+.vercel
+storage
+.playwright
+test-results
+playwright-report
+*.log
+.DS_Store
+
