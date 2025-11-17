@@ -21,8 +21,8 @@ export async function collectNavigationMetrics(page: Page): Promise<Partial<UXMe
 
       return {
         ttfb: perfData.responseStart - perfData.requestStart,
-        domContentLoaded: perfData.domContentLoadedEventEnd - perfData.navigationStart,
-        loadEvent: perfData.loadEventEnd - perfData.navigationStart,
+        domContentLoaded: perfData.domContentLoadedEventEnd - perfData.fetchStart,
+        loadEvent: perfData.loadEventEnd - perfData.fetchStart,
       }
     })
 
