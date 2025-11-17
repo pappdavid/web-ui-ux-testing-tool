@@ -30,7 +30,7 @@ export async function checkAccessibility(page: Page): Promise<AccessibilityResul
       violations: violations.map((v) => ({
         id: v.id,
         impact: v.impact || 'unknown',
-        description: v.description,
+        description: v.description || '',
         nodes: v.nodes.map((n) => ({
           html: n.html,
           target: n.target,
