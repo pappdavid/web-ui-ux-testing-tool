@@ -173,7 +173,7 @@ export async function verifyAdminUI(
         mode: 'ui',
         endpointOrPath: config.navigationPath || config.adminPanelUrl,
         expected: config.expectedData || null,
-        actual: null,
+        actual: undefined,
         status: 'error',
         details: error.message || 'Unknown error',
       },
