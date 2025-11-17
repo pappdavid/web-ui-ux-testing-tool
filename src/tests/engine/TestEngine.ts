@@ -144,7 +144,7 @@ export async function runTest(testRunId: string): Promise<void> {
     await db.testRun.update({
       where: { id: testRunId },
       data: {
-        uxMetrics,
+        uxMetrics: uxMetrics as any,
       },
     })
 
@@ -275,7 +275,7 @@ export async function runTest(testRunId: string): Promise<void> {
       data: {
         status: 'passed',
         finishedAt: new Date(),
-        uxMetrics: finalUxMetrics,
+        uxMetrics: finalUxMetrics as any,
       },
     })
 
