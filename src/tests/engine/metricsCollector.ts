@@ -83,12 +83,12 @@ export async function collectPerformanceMetrics(page: Page): Promise<Record<stri
   try {
     const metrics = await page.metrics()
     return {
-      jsHeapUsedSize: (metrics.JSHeapUsedSize as number) || 0,
-      jsHeapTotalSize: (metrics.JSHeapTotalSize as number) || 0,
-      nodes: (metrics.Nodes as number) || 0,
-      documents: (metrics.Documents as number) || 0,
-      layoutCount: (metrics.LayoutCount as number) || 0,
-      recalcStyleCount: (metrics.RecalcStyleCount as number) || 0,
+      jsHeapUsedSize: (metrics.JSHeapUsedSize ?? 0) as number,
+      jsHeapTotalSize: (metrics.JSHeapTotalSize ?? 0) as number,
+      nodes: (metrics.Nodes ?? 0) as number,
+      documents: (metrics.Documents ?? 0) as number,
+      layoutCount: (metrics.LayoutCount ?? 0) as number,
+      recalcStyleCount: (metrics.RecalcStyleCount ?? 0) as number,
     }
   } catch (error) {
     console.warn('Performance metrics collection failed:', error)
