@@ -28,7 +28,7 @@ export async function verifyAdminApi(
         testRunId,
         level: 'info',
         message: `Starting API verification: ${config.endpoint}`,
-        data: { endpoint: config.endpoint, method: config.method || 'GET' },
+        data: { endpoint: config.endpoint, method: config.method || 'GET' } as any, // JSON field
       },
     })
 
@@ -88,7 +88,7 @@ export async function verifyAdminApi(
             message: 'API verification found differences',
             data: {
               differences: comparisonResult.differences,
-            },
+            } as any, // JSON field
           },
         })
       }
@@ -101,8 +101,8 @@ export async function verifyAdminApi(
         relatedStepId,
         mode: 'api',
         endpointOrPath: config.endpoint,
-        expected: config.expectedData || undefined,
-        actual: actualData,
+        expected: (config.expectedData || undefined) as any, // JSON field
+        actual: actualData as any, // JSON field
         status,
         details,
       },
@@ -117,7 +117,7 @@ export async function verifyAdminApi(
           status,
           details,
           differences: comparisonResult?.differences || [],
-        },
+        } as any, // JSON field
       },
     })
   } catch (error: any) {
@@ -128,7 +128,7 @@ export async function verifyAdminApi(
         relatedStepId,
         mode: 'api',
         endpointOrPath: config.endpoint,
-        expected: config.expectedData || undefined,
+        expected: (config.expectedData || undefined) as any, // JSON field
         actual: undefined,
         status: 'error',
         details: error.message || 'Unknown error',
@@ -143,7 +143,7 @@ export async function verifyAdminApi(
         data: {
           error: error.message,
           stack: error.stack,
-        },
+        } as any, // JSON field
       },
     })
 

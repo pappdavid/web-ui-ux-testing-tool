@@ -7,13 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
     "test:ui": "playwright test",
     "test:install": "playwright install chromium",
-    "run-test": "tsx scripts/run-test-runner.ts"
+    "run-test": "tsx scripts/run-test-runner.ts",
+    "setup:production": "bash scripts/setup-production.sh",
+    "setup:vercel": "bash scripts/setup-vercel-production.sh",
+    "verify:env": "node scripts/verify-env.js"
   },
   "dependencies": {
     "next": "^14.2.0",

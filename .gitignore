@@ -25,11 +25,18 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env
 .env*.local
+.env
+.env.production.local
+.env.development.local
+.env.test.local
+.env.test
 
 # vercel
 .vercel
+
+# railway
+.railway
 
 # typescript
 *.tsbuildinfo
@@ -38,12 +45,33 @@ next-env.d.ts
 # prisma
 /prisma/migrations
 
+# storage
+/storage
+*.db
+*.db-shm
+*.db-wal
+
 # playwright
 /.playwright
 /test-results/
 /playwright-report/
-/playwright/.cache/
 
-# storage
-/storage
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.cache

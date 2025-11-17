@@ -32,7 +32,7 @@ export async function verifyAdminUI(
         testRunId,
         level: 'info',
         message: `Starting UI verification: ${config.adminPanelUrl}`,
-        data: { adminPanelUrl: config.adminPanelUrl },
+        data: { adminPanelUrl: config.adminPanelUrl } as any, // JSON field
       },
     })
 
@@ -132,7 +132,7 @@ export async function verifyAdminUI(
             message: 'UI verification found differences',
             data: {
               differences: comparisonResult.differences,
-            },
+            } as any, // JSON field
           },
         })
       }
@@ -145,8 +145,8 @@ export async function verifyAdminUI(
         relatedStepId,
         mode: 'ui',
         endpointOrPath: config.navigationPath || config.adminPanelUrl,
-        expected: config.expectedData || undefined,
-        actual: actualData,
+        expected: (config.expectedData || undefined) as any, // JSON field
+        actual: actualData as any, // JSON field
         status,
         details,
       },
@@ -161,7 +161,7 @@ export async function verifyAdminUI(
           status,
           details,
           differences: comparisonResult?.differences || [],
-        },
+        } as any, // JSON field
       },
     })
   } catch (error: any) {
@@ -172,7 +172,7 @@ export async function verifyAdminUI(
         relatedStepId,
         mode: 'ui',
         endpointOrPath: config.navigationPath || config.adminPanelUrl,
-        expected: config.expectedData || undefined,
+        expected: (config.expectedData || undefined) as any, // JSON field
         actual: undefined,
         status: 'error',
         details: error.message || 'Unknown error',
@@ -187,7 +187,7 @@ export async function verifyAdminUI(
         data: {
           error: error.message,
           stack: error.stack,
-        },
+        } as any, // JSON field
       },
     })
 

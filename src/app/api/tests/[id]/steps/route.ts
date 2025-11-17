@@ -44,7 +44,7 @@ export async function POST(
         value: step.value,
         assertionType: step.assertionType,
         assertionExpected: step.assertionExpected,
-        meta: step.meta || {},
+        meta: (step.meta || {}) as any, // JSON field
       })),
     })
 

@@ -44,6 +44,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/playwright ./node_modules/playwright
 COPY --from=builder /app/prisma ./prisma
 
+# Ensure the server.js is executable and in the right location
+RUN chmod +x server.js 2>/dev/null || true
+
 # Create storage directory
 RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
 

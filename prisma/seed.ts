@@ -38,7 +38,7 @@ async function main() {
           // TODO: Encrypt this properly with KMS/vault
           apiKey: 'sample-api-key',
         },
-      },
+      } as any, // JSON field in Prisma
     },
   })
 
@@ -54,7 +54,7 @@ async function main() {
       value: null,
       assertionType: null,
       assertionExpected: null,
-      meta: { timeout: 5000 },
+      meta: { timeout: 5000 } as any, // JSON field
     },
     {
       testId: test.id,
@@ -84,7 +84,7 @@ async function main() {
       value: null,
       assertionType: null,
       assertionExpected: null,
-      meta: { name: 'checkout-page' },
+      meta: { name: 'checkout-page' } as any, // JSON field
     },
     {
       testId: test.id,

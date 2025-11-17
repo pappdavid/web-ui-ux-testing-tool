@@ -75,7 +75,7 @@ export async function PUT(
         targetUrl: validated.targetUrl,
         adminPanelUrl: validated.adminPanelUrl,
         deviceProfile: validated.deviceProfile,
-        adminConfig: validated.adminConfig || { mode: 'none' },
+        adminConfig: (validated.adminConfig || { mode: 'none' }) as any, // JSON field
       },
     })
 

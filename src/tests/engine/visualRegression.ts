@@ -153,7 +153,7 @@ export async function storeVisualRegressionResult(
         stepId,
         similarity: result.similarity,
         diffPath: result.diffPath,
-      },
+      } as any, // JSON field
     },
   })
 }

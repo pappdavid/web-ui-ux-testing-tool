@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tests        Test[]
+}
+
+model Test {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  targetUrl     String
+  adminPanelUrl String?
+  deviceProfile String     @default("desktop") // desktop, mobile, tablet
+  status        String     @default("pending") // pending, running, passed, failed
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  steps         TestStep[]
+  runs          TestRun[]
+  
+  // Admin verification config (stored as JSON)
+  // TODO: Move to proper encrypted storage (KMS/vault)
+  adminConfig   Json?      // { mode: "api" | "ui" | "none", baseUrl?: string, credentials?: {...} }
+}
+
+model TestStep {
+  id                  String   @id @default(cuid())
+  testId              String
+  test                Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  orderIndex          Int
+  type                String   // click, input, select, scroll, waitForSelector, screenshot, extract, assert, dragAndDrop, fileUpload
+  selector            String?
+  value               String?
+  assertionType       String?  // equals, contains, exists, notExists
+  assertionExpected   String?
+  meta                Json?    // Additional metadata for the step
+  createdAt           DateTime @default(now())
+  
+  @@index([testId, orderIndex])
+}
+
+model TestRun {
+  id            String      @id @default(cuid())
+  testId        String
+  test          Test        @relation(fields: [testId], references: [id], onDelete: Cascade)
+  startedAt     DateTime    @default(now())
+  finishedAt    DateTime?
+  status        String      @default("running") // running, passed, failed, cancelled
+  deviceProfile String      @default("desktop")
+  browserType   String      @default("chromium") // chromium, firefox, webkit
+  uxMetrics     Json?       // { viewport: string, ttfb?: number, domContentLoaded?: number, loadEvent?: number, accessibilityIssueCount?: number, notes?: string[] }
+  logs          TestLog[]
+  adminChecks   AdminCheck[]
+  attachments   Attachment[]
+  
+  @@index([testId])
+  @@index([status])
+}
+
+model TestLog {
+  id        String   @id @default(cuid())
+  testRunId String
+  testRun   TestRun  @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  level     String   // info, warn, error
+  message   String
+  data      Json?    // Additional log data
+  
+  @@index([testRunId, timestamp])
+}
+
+model AdminCheck {
+  id            String   @id @default(cuid())
+  testRunId     String
+  testRun       TestRun  @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  relatedStepId String?  // Optional reference to the step that triggered this check
+  mode          String   // api, ui
+  endpointOrPath String? // API endpoint or UI path
+  expected      Json?    // Expected data structure
+  actual        Json?    // Actual data structure
+  status        String   // passed, failed, error
+  details       String?  // Additional details or error message
+  createdAt     DateTime @default(now())
+  
+  @@index([testRunId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  testRunId String
+  testRun   TestRun  @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  type      String   // screenshot, video, domSnapshot, report
+  pathOrUrl String   // Local path or URL to the attachment
+  createdAt DateTime @default(now())
+  
+  @@index([testRunId, type])
+}

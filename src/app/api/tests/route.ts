@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         targetUrl: validated.targetUrl,
         adminPanelUrl: validated.adminPanelUrl,
         deviceProfile: validated.deviceProfile,
-        adminConfig: validated.adminConfig || { mode: 'none' },
+        adminConfig: (validated.adminConfig || { mode: 'none' }) as any, // JSON field
       },
     })
 
