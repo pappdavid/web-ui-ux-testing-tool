@@ -19,10 +19,12 @@ export async function collectNavigationMetrics(page: Page): Promise<Partial<UXMe
       const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
       if (!perfData) return null
 
+      const startTime = perfData.fetchStart || perfData.startTime || 0
+
       return {
         ttfb: perfData.responseStart - perfData.requestStart,
-        domContentLoaded: perfData.domContentLoadedEventEnd - perfData.fetchStart,
-        loadEvent: perfData.loadEventEnd - perfData.fetchStart,
+        domContentLoaded: perfData.domContentLoadedEventEnd - startTime,
+        loadEvent: perfData.loadEventEnd - startTime,
       }
     })
 
