@@ -43,12 +43,22 @@ export default function TestForm({ initialData, testId }: TestFormProps) {
       const url = testId ? `/api/tests/${testId}` : '/api/tests'
       const method = testId ? 'PUT' : 'POST'
 
+      // Clean up empty strings - convert to undefined for optional fields
+      const payload = {
+        ...formData,
+        adminPanelUrl: formData.adminPanelUrl.trim() || undefined,
+        adminConfig: {
+          ...formData.adminConfig,
+          baseUrl: formData.adminConfig.baseUrl?.trim() || undefined,
+        },
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (response.ok) {
