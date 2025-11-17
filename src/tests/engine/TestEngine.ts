@@ -93,9 +93,27 @@ export async function runTest(testRunId: string): Promise<void> {
     const deviceProfile = DEVICE_PROFILES[test.deviceProfile] || DEVICE_PROFILES.desktop
 
     // Launch browser
-    browser = await chromium.launch({
-      headless: true,
-    })
+    // Try to use headless shell first (smaller, better for serverless)
+    try {
+      browser = await chromium.launch({
+        headless: true,
+        channel: 'chromium', // Try to use installed chromium
+      })
+    } catch (error: any) {
+      // Fallback: try without channel specification
+      try {
+        browser = await chromium.launch({
+          headless: true,
+        })
+      } catch (fallbackError: any) {
+        await logToDatabase(testRunId, 'error', 'Failed to launch browser', {
+          error: fallbackError.message,
+          originalError: error.message,
+          hint: 'Playwright browsers may not be available in serverless environment. Consider using Docker or external browser service.',
+        })
+        throw new Error(`Browser launch failed: ${fallbackError.message}. This may be due to Playwright browsers not being available in the serverless environment.`)
+      }
+    }
 
     const context = await browser.newContext({
       viewport: deviceProfile.viewport,
