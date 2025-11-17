@@ -160,7 +160,7 @@ export async function handleExtract(
     } else if ((step.meta as any)?.property) {
       // Extract property
       extractedValue = await context.page.evaluate(
-        (selector, prop) => {
+        (selector: string, prop: string) => {
           const el = document.querySelector(selector)
           return el ? (el as any)[prop] : null
         },
