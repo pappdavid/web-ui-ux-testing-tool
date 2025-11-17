@@ -1,5 +1,5 @@
 import { Page } from 'playwright'
-import { injectAxe, checkA11y, getViolations } from 'axe-playwright'
+import { injectAxe, checkA11y, getViolations } from '@axe-core/playwright'
 
 export interface AccessibilityResult {
   issueCount: number
