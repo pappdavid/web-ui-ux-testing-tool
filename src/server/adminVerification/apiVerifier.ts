@@ -101,7 +101,7 @@ export async function verifyAdminApi(
         relatedStepId,
         mode: 'api',
         endpointOrPath: config.endpoint,
-        expected: config.expectedData || null,
+        expected: config.expectedData || undefined,
         actual: actualData,
         status,
         details,
