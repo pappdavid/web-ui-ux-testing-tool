@@ -81,14 +81,29 @@ export async function collectNavigationMetrics(page: Page): Promise<Partial<UXMe
 
 export async function collectPerformanceMetrics(page: Page): Promise<Record<string, number>> {
   try {
-    const metrics = await page.metrics()
+    // Note: page.metrics() was deprecated in Playwright
+    // Using performance API instead
+    const metrics = await page.evaluate(() => {
+      const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+      if (!perfData) return {}
+      
+      return {
+        jsHeapUsedSize: (performance as any).memory?.usedJSHeapSize || 0,
+        jsHeapTotalSize: (performance as any).memory?.totalJSHeapSize || 0,
+        nodes: document.querySelectorAll('*').length,
+        documents: 1,
+        layoutCount: 0,
+        recalcStyleCount: 0,
+      }
+    })
+    
     return {
-      jsHeapUsedSize: (metrics.JSHeapUsedSize ?? 0) as number,
-      jsHeapTotalSize: (metrics.JSHeapTotalSize ?? 0) as number,
-      nodes: (metrics.Nodes ?? 0) as number,
-      documents: (metrics.Documents ?? 0) as number,
-      layoutCount: (metrics.LayoutCount ?? 0) as number,
-      recalcStyleCount: (metrics.RecalcStyleCount ?? 0) as number,
+      jsHeapUsedSize: metrics.jsHeapUsedSize || 0,
+      jsHeapTotalSize: metrics.jsHeapTotalSize || 0,
+      nodes: metrics.nodes || 0,
+      documents: metrics.documents || 0,
+      layoutCount: metrics.layoutCount || 0,
+      recalcStyleCount: metrics.recalcStyleCount || 0,
     }
   } catch (error) {
     console.warn('Performance metrics collection failed:', error)
