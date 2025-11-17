@@ -33,7 +33,7 @@ export async function checkAccessibility(page: Page): Promise<AccessibilityResul
         description: v.description || '',
         nodes: v.nodes.map((n) => ({
           html: n.html,
-          target: n.target,
+          target: Array.isArray(n.target) ? n.target : [String(n.target)],
         })),
       })),
     }
