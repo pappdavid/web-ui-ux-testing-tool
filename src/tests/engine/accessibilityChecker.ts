@@ -1,5 +1,5 @@
 import { Page } from 'playwright'
-import { injectAxe, checkA11y, getViolations } from '@axe-core/playwright'
+import AxeBuilder from '@axe-core/playwright'
 
 export interface AccessibilityResult {
   issueCount: number
@@ -16,13 +16,14 @@ export interface AccessibilityResult {
 
 export async function checkAccessibility(page: Page): Promise<AccessibilityResult> {
   try {
-    // Inject axe-core
-    await injectAxe(page)
+    // Run accessibility checks using AxeBuilder
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
 
-    // Run accessibility checks
-    const violations = await getViolations(page, null, {
-      includedImpacts: ['serious', 'critical'],
-    })
+    const violations = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical'
+    )
 
     const result: AccessibilityResult = {
       issueCount: violations.length,

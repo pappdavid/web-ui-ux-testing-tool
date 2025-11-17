@@ -64,7 +64,7 @@ async function main() {
       value: null,
       assertionType: null,
       assertionExpected: null,
-      meta: null,
+      meta: undefined,
     },
     {
       testId: test.id,
@@ -74,7 +74,7 @@ async function main() {
       value: 'test@example.com',
       assertionType: null,
       assertionExpected: null,
-      meta: null,
+      meta: undefined,
     },
     {
       testId: test.id,
@@ -94,7 +94,7 @@ async function main() {
       value: null,
       assertionType: 'contains',
       assertionExpected: 'Checkout',
-      meta: null,
+      meta: undefined,
     },
   ]
 
