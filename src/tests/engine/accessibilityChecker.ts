@@ -1,5 +1,5 @@
 import { Page } from 'playwright'
-import AxeBuilder from '@axe-core/playwright'
+import { AxeBuilder } from '@axe-core/playwright'
 
 export interface AccessibilityResult {
   issueCount: number
