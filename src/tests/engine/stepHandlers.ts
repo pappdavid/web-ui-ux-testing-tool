@@ -159,13 +159,14 @@ export async function handleExtract(
       extractedValue = await context.page.getAttribute(step.selector, (step.meta as any).attribute)
     } else if ((step.meta as any)?.property) {
       // Extract property
+      const selector = step.selector!
+      const prop = (step.meta as any).property
       extractedValue = await context.page.evaluate(
-        (selector: string, prop: string) => {
+        ({ selector, prop }: { selector: string; prop: string }) => {
           const el = document.querySelector(selector)
           return el ? (el as any)[prop] : null
         },
-        step.selector!,
-        (step.meta as any).property
+        { selector, prop }
       )
     } else {
       // Extract text content
