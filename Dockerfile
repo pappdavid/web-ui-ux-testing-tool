@@ -2,10 +2,12 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Install system dependencies for Playwright on Alpine
+# Install system dependencies for Playwright and Prisma on Alpine
+# Note: Prisma needs openssl1.1-compat for libssl.so.1.1
 RUN apk add --no-cache \
     libc6-compat \
     openssl \
+    openssl1.1-compat \
     chromium \
     nss \
     freetype \
@@ -52,8 +54,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
 
-# Install Playwright runtime dependencies for Alpine
+# Install Playwright runtime dependencies and Prisma OpenSSL for Alpine
 RUN apk add --no-cache \
+    openssl \
+    openssl1.1-compat \
     chromium \
     nss \
     freetype \
