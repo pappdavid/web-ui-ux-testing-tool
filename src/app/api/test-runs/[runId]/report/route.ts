@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
 import { db } from '@/server/db'
+import { parseJsonField } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
@@ -66,17 +67,27 @@ export async function GET(
         duration,
         deviceProfile: testRun.deviceProfile,
         browserType: testRun.browserType,
-        uxMetrics: testRun.uxMetrics,
+        uxMetrics: parseJsonField(testRun.uxMetrics),
       },
       test: {
         id: testRun.test.id,
         name: testRun.test.name,
         targetUrl: testRun.test.targetUrl,
-        steps: testRun.test.steps,
+        steps: testRun.test.steps.map(step => ({
+          ...step,
+          meta: parseJsonField(step.meta),
+        })),
       },
-      logs: testRun.logs,
+      logs: testRun.logs.map(log => ({
+        ...log,
+        data: parseJsonField(log.data),
+      })),
       attachments: testRun.attachments,
-      adminChecks: testRun.adminChecks,
+      adminChecks: testRun.adminChecks.map(check => ({
+        ...check,
+        expected: parseJsonField(check.expected),
+        actual: parseJsonField(check.actual),
+      })),
     }
 
     return NextResponse.json({ report })
