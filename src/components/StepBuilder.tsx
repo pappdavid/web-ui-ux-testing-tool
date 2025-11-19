@@ -17,9 +17,23 @@ interface StepBuilderProps {
   initialSteps?: TestStep[]
 }
 
+const STEP_TYPES = [
+  { value: 'click', label: 'Click', icon: '👆' },
+  { value: 'input', label: 'Input', icon: '⌨️' },
+  { value: 'select', label: 'Select', icon: '📋' },
+  { value: 'scroll', label: 'Scroll', icon: '📜' },
+  { value: 'waitForSelector', label: 'Wait', icon: '⏳' },
+  { value: 'screenshot', label: 'Screenshot', icon: '📸' },
+  { value: 'extract', label: 'Extract', icon: '📤' },
+  { value: 'assert', label: 'Assert', icon: '✓' },
+  { value: 'dragAndDrop', label: 'Drag & Drop', icon: '🖱️' },
+  { value: 'fileUpload', label: 'Upload', icon: '📁' },
+]
+
 export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderProps) {
   const [steps, setSteps] = useState<TestStep[]>(initialSteps)
   const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   useEffect(() => {
     setSteps(initialSteps)
@@ -44,11 +58,13 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
   }
 
   function removeStep(index: number) {
-    const newSteps = steps.filter((_, i) => i !== index).map((step, i) => ({
-      ...step,
-      orderIndex: i,
-    }))
-    setSteps(newSteps)
+    if (confirm('Are you sure you want to remove this step?')) {
+      const newSteps = steps.filter((_, i) => i !== index).map((step, i) => ({
+        ...step,
+        orderIndex: i,
+      }))
+      setSteps(newSteps)
+    }
   }
 
   function moveStep(index: number, direction: 'up' | 'down') {
@@ -69,6 +85,7 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
 
   async function saveSteps() {
     setSaving(true)
+    setSaveMessage(null)
     try {
       const response = await fetch(`/api/tests/${testId}/steps`, {
         method: 'POST',
@@ -79,92 +96,154 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
       })
 
       if (response.ok) {
-        alert('Steps saved successfully!')
+        setSaveMessage('Steps saved successfully!')
+        setTimeout(() => setSaveMessage(null), 3000)
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error || 'Failed to save steps'}`)
+        setSaveMessage(`Error: ${error.error || 'Failed to save steps'}`)
       }
     } catch (error) {
       console.error('Error saving steps:', error)
-      alert('Failed to save steps')
+      setSaveMessage('Failed to save steps')
     } finally {
       setSaving(false)
     }
   }
 
+  function getStepTypeIcon(type: string) {
+    return STEP_TYPES.find(t => t.value === type)?.icon || '📝'
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-gray-900">Test Steps</h3>
-        <div className="space-x-2">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">Test Steps</h3>
+          <p className="text-sm text-gray-600 mt-1">Define the sequence of actions for your test</p>
+        </div>
+        <div className="flex gap-3">
           <button
             onClick={addStep}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 shadow-md hover:shadow-lg transition-all"
           >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
             Add Step
           </button>
           <button
             onClick={saveSteps}
             disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {saving ? 'Saving...' : 'Save Steps'}
+            {saving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Save Steps
+              </>
+            )}
           </button>
         </div>
       </div>
 
+      {saveMessage && (
+        <div className={`p-4 rounded-xl ${saveMessage.includes('Error') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+          {saveMessage}
+        </div>
+      )}
+
       {steps.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          No steps yet. Click "Add Step" to create your first test step.
+        <div className="bg-white rounded-2xl shadow-lg p-12 text-center border-2 border-dashed border-gray-300">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No steps yet</h3>
+          <p className="text-gray-600 mb-6">Click "Add Step" to create your first test step</p>
+          <button
+            onClick={addStep}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+          >
+            Add Your First Step
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
           {steps.map((step, index) => (
-            <div key={index} className="border rounded-lg p-4 bg-gray-50">
-              <div className="flex justify-between items-start mb-3">
+            <div
+              key={index}
+              className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-300 transition-all shadow-sm hover:shadow-md"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{getStepTypeIcon(step.type)}</span>
+                      <span className="font-semibold text-gray-900">Step {index + 1}</span>
+                    </div>
+                    <p className="text-sm text-gray-500">Order: {step.orderIndex + 1}</p>
+                  </div>
+                </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-gray-700">Step {index + 1}</span>
                   <button
                     onClick={() => moveStep(index, 'up')}
                     disabled={index === 0}
-                    className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    title="Move up"
                   >
-                    ↑
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
                   </button>
                   <button
                     onClick={() => moveStep(index, 'down')}
                     disabled={index === steps.length - 1}
-                    className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    title="Move down"
                   >
-                    ↓
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => removeStep(index)}
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                    title="Remove step"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 </div>
-                <button
-                  onClick={() => removeStep(index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Step Type</label>
                   <select
                     value={step.type}
                     onChange={(e) => updateStep(index, { type: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
                   >
-                    <option value="click">Click</option>
-                    <option value="input">Input</option>
-                    <option value="select">Select</option>
-                    <option value="scroll">Scroll</option>
-                    <option value="waitForSelector">Wait For Selector</option>
-                    <option value="screenshot">Screenshot</option>
-                    <option value="extract">Extract</option>
-                    <option value="assert">Assert</option>
-                    <option value="dragAndDrop">Drag and Drop</option>
-                    <option value="fileUpload">File Upload</option>
+                    {STEP_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.icon} {type.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -173,12 +252,12 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                   step.type === 'fileUpload' ||
                   step.type === 'scroll') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Value</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Value</label>
                     <input
                       type="text"
                       value={step.value || ''}
                       onChange={(e) => updateStep(index, { value: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                       placeholder={
                         step.type === 'input'
                           ? 'Text to input'
@@ -199,13 +278,13 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                   step.type === 'screenshot' ||
                   step.type === 'dragAndDrop') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Selector</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Selector</label>
                     <input
                       type="text"
                       value={step.selector || ''}
                       onChange={(e) => updateStep(index, { selector: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                      placeholder="CSS selector"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                      placeholder="CSS selector (e.g., #button, .class, button[type='submit'])"
                     />
                   </div>
                 )}
@@ -213,13 +292,11 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                 {step.type === 'assert' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Assertion Type
-                      </label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Assertion Type</label>
                       <select
                         value={step.assertionType || ''}
                         onChange={(e) => updateStep(index, { assertionType: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
                       >
                         <option value="">Select...</option>
                         <option value="equals">Equals</option>
@@ -230,16 +307,14 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                     </div>
                     {(step.assertionType === 'equals' || step.assertionType === 'contains') && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Expected Value
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Expected Value</label>
                         <input
                           type="text"
                           value={step.assertionExpected || ''}
                           onChange={(e) =>
                             updateStep(index, { assertionExpected: e.target.value })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           placeholder="Expected value"
                         />
                       </div>
@@ -254,4 +329,3 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
     </div>
   )
 }
-

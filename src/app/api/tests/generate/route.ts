@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
-import { generateTestSteps } from '@/server/services/aiTestGenerator'
+import { generateTestStepsWithAI } from '@/server/services/aiTestGenerator'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     if (session instanceof NextResponse) return session
 
     const body = await request.json()
-    const { targetUrl, description } = body
+    const { targetUrl, description, provider, apiKey } = body
 
     if (!targetUrl) {
       return NextResponse.json(
@@ -17,15 +17,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate suggested test steps
-    const steps = await generateTestSteps(
+    // Generate suggested test steps using AI (falls back to mock if no API keys)
+    const steps = await generateTestStepsWithAI(
       targetUrl,
-      description || 'Basic UI test'
+      description || 'Basic UI test',
+      provider || 'auto',
+      apiKey
     )
 
     return NextResponse.json({
       steps,
       message: 'Test steps generated successfully',
+      provider: provider || (process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock'),
     })
   } catch (error: any) {
     console.error('Error generating test steps:', error)

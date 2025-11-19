@@ -115,17 +115,22 @@ export async function runTest(testRunId: string): Promise<void> {
       }
     }
 
+    const storageDir = path.resolve(STORAGE_PATH)
+    const testRunDir = path.join(storageDir, testRunId)
+    await fs.mkdir(testRunDir, { recursive: true })
+
     const context = await browser.newContext({
       viewport: deviceProfile.viewport,
       userAgent: deviceProfile.userAgent,
       deviceScaleFactor: deviceProfile.deviceScaleFactor,
       isMobile: deviceProfile.isMobile,
       hasTouch: deviceProfile.hasTouch,
+      // Enable video recording
+      recordVideo: {
+        dir: testRunDir,
+        size: deviceProfile.viewport,
+      },
     })
-
-    // Start video recording if possible
-    // Note: Playwright video recording requires specific setup
-    // For now, we'll skip it but leave a TODO
 
     page = await context.newPage()
 
@@ -191,7 +196,9 @@ export async function runTest(testRunId: string): Promise<void> {
       }
 
       try {
-        const result: StepExecutionResult = await handler(step, testContext, testRunId)
+        // Ensure step has testId for visual regression
+        const stepWithTestId = { ...step, testId: test.id }
+        const result: StepExecutionResult = await handler(stepWithTestId, testContext, testRunId)
 
         if (!result.success) {
           await logToDatabase(testRunId, 'error', `Step ${i + 1} failed: ${result.error}`, {
@@ -207,23 +214,38 @@ export async function runTest(testRunId: string): Promise<void> {
             await logToDatabase(testRunId, 'info', 'DOM snapshot captured', { path: snapshotPath })
           }
 
-          // Update test run status
-          await db.testRun.update({
-            where: { id: testRunId },
-            data: {
-              status: 'failed',
-              finishedAt: new Date(),
-            },
-          })
+        // Save video recording on failure
+        if (page) {
+          try {
+            const video = await page.video()
+            if (video) {
+              const videoFileName = `test-run-${testRunId}-failed-${Date.now()}.webm`
+              const videoPath = path.join(testRunDir, videoFileName)
+              await video.saveAs(videoPath)
+              await createAttachment(testRunId, 'video', videoPath)
+            }
+          } catch (error: any) {
+            console.error('Failed to save video on error:', error)
+          }
+        }
 
-          await db.test.update({
-            where: { id: test.id },
-            data: {
-              status: 'failed',
-            },
-          })
+        // Update test run status
+        await db.testRun.update({
+          where: { id: testRunId },
+          data: {
+            status: 'failed',
+            finishedAt: new Date(),
+          },
+        })
 
-          throw new Error(`Step ${i + 1} failed: ${result.error}`)
+        await db.test.update({
+          where: { id: test.id },
+          data: {
+            status: 'failed',
+          },
+        })
+
+        throw new Error(`Step ${i + 1} failed: ${result.error}`)
         }
 
         // Save screenshot if one was taken
@@ -246,6 +268,19 @@ export async function runTest(testRunId: string): Promise<void> {
         if (page) {
           const snapshotPath = await captureDOMSnapshot(page, testRunId)
           await createAttachment(testRunId, 'domSnapshot', snapshotPath)
+          
+          // Save video recording on error
+          try {
+            const video = await page.video()
+            if (video) {
+              const videoFileName = `test-run-${testRunId}-error-${Date.now()}.webm`
+              const videoPath = path.join(testRunDir, videoFileName)
+              await video.saveAs(videoPath)
+              await createAttachment(testRunId, 'video', videoPath)
+            }
+          } catch (videoError: any) {
+            console.error('Failed to save video on error:', videoError)
+          }
         }
 
         // Update test run status
@@ -285,6 +320,23 @@ export async function runTest(testRunId: string): Promise<void> {
           ? [`Final check: Found ${finalA11yResult.issueCount} accessibility violations`]
           : []),
       ],
+    }
+
+    // Save video recording before closing context
+    let videoPath: string | null = null
+    if (page) {
+      try {
+        const video = await page.video()
+        if (video) {
+          const videoFileName = `test-run-${testRunId}-${Date.now()}.webm`
+          videoPath = path.join(testRunDir, videoFileName)
+          await video.saveAs(videoPath)
+          await createAttachment(testRunId, 'video', videoPath)
+          await logToDatabase(testRunId, 'info', 'Video recording saved', { path: videoPath })
+        }
+      } catch (error: any) {
+        await logToDatabase(testRunId, 'warn', 'Failed to save video recording', { error: error.message })
+      }
     }
 
     // Update test run status with final metrics

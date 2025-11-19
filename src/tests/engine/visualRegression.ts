@@ -3,6 +3,8 @@ import { db } from '@/server/db'
 import path from 'path'
 import fs from 'fs/promises'
 import { createHash } from 'crypto'
+import { PNG } from 'pngjs'
+import pixelmatch from 'pixelmatch'
 
 const STORAGE_PATH = process.env.STORAGE_PATH || './storage'
 
@@ -11,46 +13,81 @@ interface VisualDiffResult {
   diffPath?: string
   similarity: number
   message: string
+  diffCount?: number
+  totalPixels?: number
 }
 
 /**
- * Compare two images using pixel comparison
+ * Load PNG image from file
+ */
+async function loadPNG(filePath: string): Promise<PNG> {
+  const data = await fs.readFile(filePath)
+  return new Promise((resolve, reject) => {
+    const png = new PNG()
+    png.parse(data, (error, data) => {
+      if (error) reject(error)
+      else resolve(data)
+    })
+  })
+}
+
+/**
+ * Compare two images using pixel-perfect comparison
  * Returns similarity percentage (0-100)
  */
 async function compareImages(
   baselinePath: string,
   currentPath: string,
   threshold: number = 0.95
-): Promise<{ similarity: number; passed: boolean }> {
-  // TODO: Implement actual image comparison using a library like pixelmatch or sharp
-  // For now, this is a placeholder that would need a proper image comparison library
-  
-  // In a real implementation, you would:
-  // 1. Load both images
-  // 2. Compare pixels
-  // 3. Calculate similarity percentage
-  // 4. Generate diff image if differences found
-  
-  // Placeholder implementation
+): Promise<{ similarity: number; passed: boolean; diffCount: number; totalPixels: number }> {
   try {
     const baselineExists = await fs.access(baselinePath).then(() => true).catch(() => false)
     const currentExists = await fs.access(currentPath).then(() => true).catch(() => false)
     
     if (!baselineExists || !currentExists) {
-      return { similarity: 0, passed: false }
+      return { similarity: 0, passed: false, diffCount: 0, totalPixels: 0 }
     }
-    
-    // Mock similarity calculation
-    // In production, use a proper image comparison library
-    const similarity = 0.98 // Placeholder
-    
+
+    // Load both images
+    const baselineImg = await loadPNG(baselinePath)
+    const currentImg = await loadPNG(currentPath)
+
+    // Ensure images have same dimensions
+    if (baselineImg.width !== currentImg.width || baselineImg.height !== currentImg.height) {
+      return {
+        similarity: 0,
+        passed: false,
+        diffCount: Math.max(baselineImg.width * baselineImg.height, currentImg.width * currentImg.height),
+        totalPixels: baselineImg.width * baselineImg.height,
+      }
+    }
+
+    const totalPixels = baselineImg.width * baselineImg.height
+    const diff = new PNG({ width: baselineImg.width, height: baselineImg.height })
+
+    // Compare pixels
+    const diffCount = pixelmatch(
+      baselineImg.data,
+      currentImg.data,
+      diff.data,
+      baselineImg.width,
+      baselineImg.height,
+      {
+        threshold: 0.1, // Pixel difference threshold
+      }
+    )
+
+    const similarity = 1 - diffCount / totalPixels
+
     return {
       similarity,
       passed: similarity >= threshold,
+      diffCount,
+      totalPixels,
     }
   } catch (error) {
     console.error('Image comparison error:', error)
-    return { similarity: 0, passed: false }
+    return { similarity: 0, passed: false, diffCount: 0, totalPixels: 0 }
   }
 }
 
@@ -72,7 +109,7 @@ export async function saveBaseline(
 }
 
 /**
- * Compare current screenshot with baseline
+ * Compare current screenshot with baseline using pixel-perfect comparison
  */
 export async function compareWithBaseline(
   testId: string,
@@ -103,26 +140,48 @@ export async function compareWithBaseline(
     const comparison = await compareImages(baselinePath, currentScreenshotPath, threshold)
     
     if (!comparison.passed) {
-      // Generate diff image (placeholder - would need actual implementation)
+      // Generate diff image
       const diffDir = path.join(STORAGE_PATH, 'diffs', testId)
       await fs.mkdir(diffDir, { recursive: true })
       const diffPath = path.join(diffDir, `step-${stepId}-diff.png`)
       
-      // TODO: Generate actual diff image using pixelmatch or similar
-      // For now, just copy the current screenshot
-      await fs.copyFile(currentScreenshotPath, diffPath)
+      // Load images and create diff
+      const baselineImg = await loadPNG(baselinePath)
+      const currentImg = await loadPNG(currentScreenshotPath)
+      
+      if (baselineImg.width === currentImg.width && baselineImg.height === currentImg.height) {
+        const diff = new PNG({ width: baselineImg.width, height: baselineImg.height })
+        pixelmatch(
+          baselineImg.data,
+          currentImg.data,
+          diff.data,
+          baselineImg.width,
+          baselineImg.height,
+          { threshold: 0.1 }
+        )
+        
+        // Save diff image
+        await new Promise<void>((resolve, reject) => {
+          const buffer = PNG.sync.write(diff)
+          fs.writeFile(diffPath, buffer).then(() => resolve()).catch(reject)
+        })
+      }
       
       return {
         passed: false,
         diffPath,
         similarity: comparison.similarity * 100,
-        message: `Visual regression failed: ${(comparison.similarity * 100).toFixed(2)}% similarity (threshold: ${threshold * 100}%)`,
+        diffCount: comparison.diffCount,
+        totalPixels: comparison.totalPixels,
+        message: `Visual regression failed: ${(comparison.similarity * 100).toFixed(2)}% similarity (${comparison.diffCount} pixels differ, threshold: ${threshold * 100}%)`,
       }
     }
 
     return {
       passed: true,
       similarity: comparison.similarity * 100,
+      diffCount: comparison.diffCount,
+      totalPixels: comparison.totalPixels,
       message: `Visual regression passed: ${(comparison.similarity * 100).toFixed(2)}% similarity`,
     }
   } catch (error: any) {
@@ -153,8 +212,9 @@ export async function storeVisualRegressionResult(
         stepId,
         similarity: result.similarity,
         diffPath: result.diffPath,
+        diffCount: result.diffCount,
+        totalPixels: result.totalPixels,
       } as any, // JSON field
     },
   })
 }
-

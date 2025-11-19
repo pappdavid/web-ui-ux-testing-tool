@@ -3,6 +3,7 @@ import { TestStep, AssertionType } from '../models/TestStep'
 import { TestContext, StepExecutionResult } from './types'
 import path from 'path'
 import fs from 'fs/promises'
+import { compareWithBaseline, storeVisualRegressionResult } from './visualRegression'
 
 const STORAGE_PATH = process.env.STORAGE_PATH || './storage'
 
@@ -134,6 +135,33 @@ export async function handleScreenshot(
       await context.page.locator(step.selector).screenshot({ path: screenshotPath })
     } else {
       await context.page.screenshot({ path: screenshotPath, fullPage: true })
+    }
+
+    // Perform visual regression comparison if enabled
+    const enableVisualRegression = (step.meta as any)?.visualRegression !== false
+    if (enableVisualRegression && step.testId) {
+      try {
+        const visualResult = await compareWithBaseline(
+          step.testId,
+          step.id,
+          screenshotPath,
+          (step.meta as any)?.threshold || 0.95
+        )
+        
+        await storeVisualRegressionResult(testRunId, step.id, visualResult)
+        
+        if (!visualResult.passed) {
+          return {
+            success: false,
+            error: `Visual regression failed: ${visualResult.message}`,
+            screenshotPath,
+            data: { visualRegression: visualResult },
+          }
+        }
+      } catch (visualError: any) {
+        console.error('Visual regression error:', visualError)
+        // Don't fail the step if visual regression fails, just log it
+      }
     }
 
     return { success: true, screenshotPath }
