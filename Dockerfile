@@ -51,6 +51,17 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
 
+# Install Playwright runtime dependencies for Alpine
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
