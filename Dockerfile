@@ -3,11 +3,10 @@ FROM node:18-alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 # Install system dependencies for Playwright and Prisma on Alpine
-# Note: Prisma needs openssl1.1-compat for libssl.so.1.1
+# Note: Prisma needs libssl.so.1.1 - use openssl1.1-compat or install from edge repo
 RUN apk add --no-cache \
     libc6-compat \
     openssl \
-    openssl1.1-compat \
     chromium \
     nss \
     freetype \
@@ -16,7 +15,8 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     font-noto-emoji \
-    && rm -rf /var/cache/apk/*
+    || (apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main openssl1.1-compat && \
+        apk add --no-cache libc6-compat openssl chromium nss freetype freetype-dev harfbuzz ca-certificates ttf-freefont font-noto-emoji)
 WORKDIR /app
 
 # Copy package files
@@ -57,7 +57,6 @@ ENV DOCKER_BUILD=true
 # Install Playwright runtime dependencies and Prisma OpenSSL for Alpine
 RUN apk add --no-cache \
     openssl \
-    openssl1.1-compat \
     chromium \
     nss \
     freetype \
@@ -65,7 +64,8 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     font-noto-emoji \
-    && rm -rf /var/cache/apk/*
+    || (apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main openssl1.1-compat && \
+        apk add --no-cache openssl chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto-emoji)
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
