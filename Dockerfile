@@ -2,10 +2,16 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl1.1-compat
 WORKDIR /app
 
+# Copy package files
 COPY package.json package-lock.json* ./
+
+# Copy Prisma schema before npm ci (needed for postinstall script)
+COPY prisma ./prisma
+
+# Install dependencies (this will run prisma generate via postinstall)
 RUN npm ci
 
 # Install Playwright browsers
