@@ -27,7 +27,10 @@ COPY prisma ./prisma
 RUN npm ci
 
 # Install Playwright browsers (without system deps since we installed them manually)
-RUN npx playwright install chromium
+# Use system Chromium instead of downloading
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+RUN npx playwright install chromium || true
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -50,6 +53,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
+# Configure Playwright to use system Chromium
+ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install Playwright runtime dependencies for Alpine
 RUN apk add --no-cache \
