@@ -1,22 +1,30 @@
-FROM node:18-alpine AS base
+FROM node:18-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Install system dependencies for Playwright and Prisma on Alpine
-# Note: Prisma needs libssl.so.1.1 - use openssl1.1-compat or install from edge repo
-RUN apk add --no-cache \
-    libc6-compat \
-    openssl \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
+# Install system dependencies for Playwright and Prisma on Debian
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
     ca-certificates \
-    ttf-freefont \
-    font-noto-emoji \
-    || (apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main openssl1.1-compat && \
-        apk add --no-cache libc6-compat openssl chromium nss freetype freetype-dev harfbuzz ca-certificates ttf-freefont font-noto-emoji)
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Copy package files
@@ -54,18 +62,29 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
 
-# Install Playwright runtime dependencies and Prisma OpenSSL for Alpine
-RUN apk add --no-cache \
-    openssl \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
+# Install Playwright runtime dependencies for Debian
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
     ca-certificates \
-    ttf-freefont \
-    font-noto-emoji \
-    || (apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main openssl1.1-compat && \
-        apk add --no-cache openssl chromium nss freetype harfbuzz ca-certificates ttf-freefont font-noto-emoji)
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libatspi2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
