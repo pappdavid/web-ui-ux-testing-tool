@@ -2,7 +2,19 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat openssl
+# Install system dependencies for Playwright on Alpine
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
 WORKDIR /app
 
 # Copy package files
@@ -14,8 +26,8 @@ COPY prisma ./prisma
 # Install dependencies (this will run prisma generate via postinstall)
 RUN npm ci
 
-# Install Playwright browsers
-RUN npx playwright install --with-deps chromium
+# Install Playwright browsers (without system deps since we installed them manually)
+RUN npx playwright install chromium
 
 # Rebuild the source code only when needed
 FROM base AS builder
