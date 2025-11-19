@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
 import { db } from '@/server/db'
-import { parseJsonField } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
@@ -67,27 +66,17 @@ export async function GET(
         duration,
         deviceProfile: testRun.deviceProfile,
         browserType: testRun.browserType,
-        uxMetrics: parseJsonField(testRun.uxMetrics),
+        uxMetrics: testRun.uxMetrics, // PostgreSQL returns Json as objects
       },
       test: {
         id: testRun.test.id,
         name: testRun.test.name,
         targetUrl: testRun.test.targetUrl,
-        steps: testRun.test.steps.map(step => ({
-          ...step,
-          meta: parseJsonField(step.meta),
-        })),
+        steps: testRun.test.steps, // PostgreSQL returns Json as objects
       },
-      logs: testRun.logs.map(log => ({
-        ...log,
-        data: parseJsonField(log.data),
-      })),
+      logs: testRun.logs, // PostgreSQL returns Json as objects
       attachments: testRun.attachments,
-      adminChecks: testRun.adminChecks.map(check => ({
-        ...check,
-        expected: parseJsonField(check.expected),
-        actual: parseJsonField(check.actual),
-      })),
+      adminChecks: testRun.adminChecks, // PostgreSQL returns Json as objects
     }
 
     return NextResponse.json({ report })

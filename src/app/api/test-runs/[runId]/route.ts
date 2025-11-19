@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
 import { db } from '@/server/db'
-import { parseJsonField } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
@@ -48,26 +47,8 @@ export async function GET(
       )
     }
 
-    // Parse JSON fields for response
-    const testRunWithParsedJson = {
-      ...testRun,
-      uxMetrics: parseJsonField(testRun.uxMetrics),
-      test: {
-        ...testRun.test,
-        adminConfig: parseJsonField(testRun.test.adminConfig),
-        steps: testRun.test.steps.map(step => ({
-          ...step,
-          meta: parseJsonField(step.meta),
-        })),
-      },
-      adminChecks: testRun.adminChecks.map(check => ({
-        ...check,
-        expected: parseJsonField(check.expected),
-        actual: parseJsonField(check.actual),
-      })),
-    }
-
-    return NextResponse.json({ testRun: testRunWithParsedJson })
+    // PostgreSQL returns Json fields as objects, so no parsing needed
+    return NextResponse.json({ testRun })
   } catch (error) {
     console.error('Error fetching test run:', error)
     return NextResponse.json(

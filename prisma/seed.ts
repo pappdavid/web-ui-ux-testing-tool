@@ -31,14 +31,14 @@ async function main() {
       adminPanelUrl: 'https://admin.example.com',
       deviceProfile: 'desktop',
       status: 'pending',
-      adminConfig: JSON.stringify({
+      adminConfig: {
         mode: 'api',
         baseUrl: 'https://api.example.com',
         credentials: {
           // TODO: Encrypt this properly with KMS/vault
           apiKey: 'sample-api-key',
         },
-      }), // JSON stored as string in SQLite
+      } as any, // JSON field in Prisma (PostgreSQL)
     },
   })
 
@@ -54,7 +54,7 @@ async function main() {
       value: null,
       assertionType: null,
       assertionExpected: null,
-      meta: JSON.stringify({ timeout: 5000 }), // JSON stored as string in SQLite
+      meta: { timeout: 5000 } as any, // JSON field
     },
     {
       testId: test.id,
@@ -84,7 +84,7 @@ async function main() {
       value: null,
       assertionType: null,
       assertionExpected: null,
-      meta: JSON.stringify({ name: 'checkout-page' }), // JSON stored as string in SQLite
+      meta: { name: 'checkout-page' } as any, // JSON field
     },
     {
       testId: test.id,
@@ -118,4 +118,3 @@ main()
     await prisma.$disconnect()
     process.exit(1)
   })
-

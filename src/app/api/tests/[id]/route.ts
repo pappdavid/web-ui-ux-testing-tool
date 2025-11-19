@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
 import { createTestSchema } from '@/lib/validations'
 import { db } from '@/server/db'
-import { stringifyJsonField, parseJsonField } from '@/lib/utils'
 
 export async function GET(
   request: NextRequest,
@@ -33,17 +32,8 @@ export async function GET(
       )
     }
 
-    // Parse JSON fields for response
-    const testWithParsedJson = {
-      ...test,
-      adminConfig: parseJsonField(test.adminConfig),
-      steps: test.steps.map(step => ({
-        ...step,
-        meta: parseJsonField(step.meta),
-      })),
-    }
-
-    return NextResponse.json({ test: testWithParsedJson })
+    // PostgreSQL returns Json fields as objects, so no parsing needed
+    return NextResponse.json({ test })
   } catch (error) {
     console.error('Error fetching test:', error)
     return NextResponse.json(
@@ -86,17 +76,11 @@ export async function PUT(
         targetUrl: validated.targetUrl,
         adminPanelUrl: validated.adminPanelUrl,
         deviceProfile: validated.deviceProfile,
-        adminConfig: stringifyJsonField(validated.adminConfig || { mode: 'none' }), // JSON stored as string in SQLite
+        adminConfig: (validated.adminConfig || { mode: 'none' }) as any, // JSON field (PostgreSQL handles natively)
       },
     })
 
-    // Parse JSON fields for response
-    const testWithParsedJson = {
-      ...test,
-      adminConfig: parseJsonField(test.adminConfig),
-    }
-
-    return NextResponse.json({ test: testWithParsedJson })
+    return NextResponse.json({ test })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json(
