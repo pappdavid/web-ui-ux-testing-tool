@@ -48,6 +48,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
           }),
         })
 
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        
         if (response.ok) {
           // Auto-login after registration
           const result = await signIn('credentials', {
@@ -62,8 +64,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
             router.push('/login')
           }
         } else {
-          const errorData = await response.json()
-          setError(errorData.error || 'Registration failed')
+          // Show detailed error message
+          const errorMessage = errorData.message || errorData.error || 'Registration failed'
+          setError(errorMessage)
+          
+          // Log full error for debugging
+          if (errorData.details) {
+            console.error('Registration error details:', errorData.details)
+          }
         }
       } catch (error: any) {
         console.error('Registration error:', error)
@@ -83,11 +91,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
         if (result?.ok) {
           router.push('/dashboard')
         } else {
-          setError('Invalid email or password')
+          // Get more details from the error
+          const errorMessage = result?.error === 'CredentialsSignin' 
+            ? 'Invalid email or password'
+            : result?.error === 'Configuration'
+            ? 'Authentication service is not configured properly. Please contact support.'
+            : result?.error || 'Login failed. Please check your credentials and try again.'
+          setError(errorMessage)
         }
       } catch (error: any) {
         console.error('Login error:', error)
-        setError(error.message || 'Login failed')
+        const errorMessage = error.message || 'Login failed. Please check your connection and try again.'
+        setError(errorMessage)
       } finally {
         setLoading(false)
       }

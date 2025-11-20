@@ -13,26 +13,36 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null
+          throw new Error('Email and password are required')
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        })
+        try {
+          // Ensure database connection
+          await db.$connect().catch(() => {
+            // Connection might already be established
+          })
 
-        if (!user) {
-          return null
-        }
+          const user = await db.user.findUnique({
+            where: { email: credentials.email },
+          })
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash)
+          if (!user) {
+            return null // Invalid credentials
+          }
 
-        if (!isValid) {
-          return null
-        }
+          const isValid = await bcrypt.compare(credentials.password, user.passwordHash)
 
-        return {
-          id: user.id,
-          email: user.email,
+          if (!isValid) {
+            return null // Invalid credentials
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+          }
+        } catch (error: any) {
+          console.error('Authentication error:', error)
+          throw new Error('Authentication service error. Please try again later.')
         }
       },
     }),

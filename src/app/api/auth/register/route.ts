@@ -8,33 +8,94 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = registerSchema.parse(body)
 
+    // Test database connection first (connection might already be established)
+    try {
+      await db.$connect().catch(() => {
+        // Connection might already be established, that's okay
+      })
+    } catch (dbError: any) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed',
+          message: 'Unable to connect to the database. Please check your database configuration.',
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 503 }
+      )
+    }
+
     // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: validated.email },
-    })
+    let existingUser
+    try {
+      existingUser = await db.user.findUnique({
+        where: { email: validated.email },
+      })
+    } catch (dbError: any) {
+      console.error('Database query error:', dbError)
+      return NextResponse.json(
+        { 
+          error: 'Database query failed',
+          message: 'Unable to check if user exists. Please try again later.',
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 503 }
+      )
+    }
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'User already exists', message: 'An account with this email already exists. Please login instead.' },
         { status: 400 }
       )
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(validated.password, 10)
+    let passwordHash
+    try {
+      passwordHash = await bcrypt.hash(validated.password, 10)
+    } catch (hashError: any) {
+      console.error('Password hashing error:', hashError)
+      return NextResponse.json(
+        { error: 'Password hashing failed', message: 'Unable to process password. Please try again.' },
+        { status: 500 }
+      )
+    }
 
     // Create user
-    const user = await db.user.create({
-      data: {
-        email: validated.email,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        email: true,
-        createdAt: true,
-      },
-    })
+    let user
+    try {
+      user = await db.user.create({
+        data: {
+          email: validated.email,
+          passwordHash,
+        },
+        select: {
+          id: true,
+          email: true,
+          createdAt: true,
+        },
+      })
+    } catch (createError: any) {
+      console.error('User creation error:', createError)
+      
+      // Handle Prisma unique constraint errors
+      if (createError.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'User already exists', message: 'An account with this email already exists.' },
+          { status: 400 }
+        )
+      }
+
+      return NextResponse.json(
+        { 
+          error: 'User creation failed',
+          message: 'Unable to create user account. Please try again later.',
+          details: process.env.NODE_ENV === 'development' ? createError.message : undefined
+        },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
       { user, message: 'User created successfully' },
@@ -43,16 +104,27 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { 
+          error: 'Validation error',
+          message: 'Please check your input and try again.',
+          details: error.errors 
+        },
         { status: 400 }
       )
     }
 
     console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: 'An unexpected error occurred. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     )
+  } finally {
+    // Don't disconnect - let Prisma manage connection pooling
+    // await db.$disconnect().catch(() => {})
   }
 }
 
