@@ -36,7 +36,11 @@ COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 
 # Install dependencies (this will run prisma generate via postinstall)
+# But we'll regenerate with correct binary targets after
 RUN npm ci
+
+# Regenerate Prisma client with correct binary targets (OpenSSL 3.x)
+RUN npx prisma generate
 
 # Install Playwright browsers (without system deps since we installed them manually)
 # Playwright will download its own Chromium, but we've installed the system dependencies
