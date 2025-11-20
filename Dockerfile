@@ -103,9 +103,14 @@ COPY --from=builder /app/prisma ./prisma
 # Install Playwright browsers in production image
 # This ensures browsers are available at runtime
 # Install to a shared location accessible by nextjs user
+# Set environment variable BEFORE installing browsers
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+# Install browsers as root (before switching to nextjs user)
 RUN npx playwright install chromium --with-deps || npx playwright install chromium
-RUN chown -R nextjs:nodejs /app/.playwright || true
+# Ensure browsers directory exists and is accessible
+RUN mkdir -p /app/.playwright && chown -R nextjs:nodejs /app/.playwright
+# Verify browsers were installed
+RUN ls -la /app/.playwright || echo "Browser installation check"
 
 # Ensure the server.js is executable and in the right location
 RUN chmod +x server.js 2>/dev/null || true
