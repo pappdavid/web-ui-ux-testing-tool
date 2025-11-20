@@ -40,6 +40,8 @@ COPY prisma ./prisma
 RUN npm ci
 
 # Regenerate Prisma client with correct binary targets (OpenSSL 3.x)
+# Force Prisma to use OpenSSL 3.x binary
+ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate
 
 # Install Playwright browsers (without system deps since we installed them manually)
@@ -56,8 +58,9 @@ COPY . .
 ENV DOCKER_BUILD=true
 ENV NODE_ENV=production
 
-# Generate Prisma Client
-# Prisma will auto-detect OpenSSL version, but we ensure OpenSSL 3.x is available
+# Generate Prisma Client with OpenSSL 3.x
+# Force Prisma to use OpenSSL 3.x binary
+ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (will create standalone output)
