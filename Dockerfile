@@ -32,14 +32,13 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Copy Prisma schema before npm ci (needed for postinstall script)
+# Copy Prisma schema before npm ci
 COPY prisma ./prisma
 
-# Install dependencies (this will run prisma generate via postinstall)
-# But we'll regenerate with correct binary targets after
-RUN npm ci
+# Install dependencies (without Prisma generate - we'll do it explicitly)
+RUN npm ci --ignore-scripts
 
-# Regenerate Prisma client with correct binary targets (OpenSSL 3.x)
+# Generate Prisma client with correct binary targets (OpenSSL 3.x)
 # Force Prisma to use OpenSSL 3.x binary
 ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate
