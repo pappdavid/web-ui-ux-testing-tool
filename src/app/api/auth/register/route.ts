@@ -8,18 +8,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = registerSchema.parse(body)
 
-    // Test database connection first (connection might already be established)
-    try {
-      await db.$connect().catch(() => {
-        // Connection might already be established, that's okay
-      })
-    } catch (dbError: any) {
-      console.error('Database connection error:', dbError)
+    // Check if DATABASE_URL is configured
+    if (!process.env.DATABASE_URL) {
       return NextResponse.json(
         { 
-          error: 'Database connection failed',
-          message: 'Unable to connect to the database. Please check your database configuration.',
-          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+          error: 'Database not configured',
+          message: 'Database connection string is not configured. Please check your environment variables.',
         },
         { status: 503 }
       )

@@ -17,10 +17,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Ensure database connection
-          await db.$connect().catch(() => {
-            // Connection might already be established
-          })
+          // Check if DATABASE_URL is configured
+          if (!process.env.DATABASE_URL) {
+            throw new Error('Database not configured')
+          }
 
           const user = await db.user.findUnique({
             where: { email: credentials.email },
