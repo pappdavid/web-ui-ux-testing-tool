@@ -93,25 +93,48 @@ export async function runTest(testRunId: string): Promise<void> {
     const deviceProfile = DEVICE_PROFILES[test.deviceProfile] || DEVICE_PROFILES.desktop
 
     // Launch browser
-    // Try to use headless shell first (smaller, better for serverless)
+    // Check if PLAYWRIGHT_BROWSERS_PATH is set (for Docker/production)
+    const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH
+    if (browsersPath) {
+      console.log(`Using Playwright browsers from: ${browsersPath}`)
+    }
+    
+    // Try multiple launch strategies
     try {
-      browser = await chromium.launch({
-        headless: true,
-        channel: 'chromium', // Try to use installed chromium
-      })
+      // First try: Use executablePath if browsers are in custom location
+      if (browsersPath) {
+        const executablePath = path.join(browsersPath, 'chromium-*/chrome-linux/chrome')
+        try {
+          browser = await chromium.launch({
+            headless: true,
+            executablePath: executablePath,
+          })
+        } catch (execPathError: any) {
+          console.log('ExecutablePath launch failed, trying default:', execPathError.message)
+        }
+      }
+      
+      // Second try: Launch without channel (uses default browser location)
+      if (!browser) {
+        browser = await chromium.launch({
+          headless: true,
+        })
+      }
     } catch (error: any) {
-      // Fallback: try without channel specification
+      // Fallback: try with channel specification
       try {
         browser = await chromium.launch({
           headless: true,
+          channel: 'chromium',
         })
       } catch (fallbackError: any) {
         await logToDatabase(testRunId, 'error', 'Failed to launch browser', {
           error: fallbackError.message,
           originalError: error.message,
-          hint: 'Playwright browsers may not be available in serverless environment. Consider using Docker or external browser service.',
+          browsersPath: browsersPath || 'not set',
+          hint: 'Playwright browsers may not be available. Check PLAYWRIGHT_BROWSERS_PATH environment variable.',
         })
-        throw new Error(`Browser launch failed: ${fallbackError.message}. This may be due to Playwright browsers not being available in the serverless environment.`)
+        throw new Error(`Browser launch failed: ${fallbackError.message}. PLAYWRIGHT_BROWSERS_PATH=${browsersPath || 'not set'}`)
       }
     }
 

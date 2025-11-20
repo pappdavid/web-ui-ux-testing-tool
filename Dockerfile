@@ -119,6 +119,8 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Ensure PLAYWRIGHT_BROWSERS_PATH is set at runtime
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
 
 CMD ["node", "server.js"]
 
