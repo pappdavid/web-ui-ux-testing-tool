@@ -48,12 +48,16 @@ COPY . .
 
 # Set Docker build flag
 ENV DOCKER_BUILD=true
+ENV NODE_ENV=production
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Build Next.js
+# Build Next.js (will create standalone output)
 RUN npm run build
+
+# Verify standalone output exists
+RUN test -f .next/standalone/server.js || (echo "ERROR: standalone build failed" && exit 1)
 
 # Production image
 FROM base AS runner
@@ -90,17 +94,19 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files
-# Next.js standalone output includes public files, so we don't need to copy separately
-# But we'll create the directory structure first
+# Next.js standalone output includes server.js in the root
 RUN mkdir -p ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Copy Prisma and Playwright dependencies
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/playwright ./node_modules/playwright
 COPY --from=builder /app/prisma ./prisma
 
-# Ensure the server.js is executable and in the right location
-RUN chmod +x server.js 2>/dev/null || true
+# Ensure the server.js is executable and exists
+RUN test -f server.js && chmod +x server.js || (echo "ERROR: server.js not found" && ls -la && exit 1)
 
 # Create storage directory
 RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage

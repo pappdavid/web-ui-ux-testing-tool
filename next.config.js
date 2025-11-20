@@ -5,8 +5,8 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
-  // Enable standalone output for Docker
-  output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
+  // Enable standalone output for Docker/Railway
+  output: 'standalone',
   
   // Production optimizations
   compress: true,
