@@ -6,7 +6,7 @@ FROM base AS deps
 RUN apt-get update && apt-get install -y \
     openssl \
     libssl-dev \
-    libssl1.1 \
+    libssl3 \
     ca-certificates \
     fonts-liberation \
     libasound2 \
@@ -52,7 +52,8 @@ COPY . .
 ENV DOCKER_BUILD=true
 ENV NODE_ENV=production
 
-# Generate Prisma Client
+# Generate Prisma Client with OpenSSL 3.x support
+ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate
 
 # Build Next.js (will create standalone output)
@@ -72,7 +73,7 @@ ENV DOCKER_BUILD=true
 RUN apt-get update && apt-get install -y \
     openssl \
     libssl-dev \
-    libssl1.1 \
+    libssl3 \
     ca-certificates \
     fonts-liberation \
     libasound2 \
