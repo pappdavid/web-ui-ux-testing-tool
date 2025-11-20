@@ -38,7 +38,8 @@ RUN npm ci
 
 # Install Playwright browsers (without system deps since we installed them manually)
 # Playwright will download its own Chromium, but we've installed the system dependencies
-RUN npx playwright install chromium
+# Use --with-deps flag to ensure all dependencies are installed
+RUN npx playwright install chromium --with-deps || npx playwright install chromium
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -98,6 +99,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/playwright ./node_modules/playwright
 COPY --from=builder /app/prisma ./prisma
+
+# Install Playwright browsers in production image
+# This ensures browsers are available at runtime
+# Install to a shared location accessible by nextjs user
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+RUN npx playwright install chromium --with-deps || npx playwright install chromium
+RUN chown -R nextjs:nodejs /app/.playwright || true
 
 # Ensure the server.js is executable and in the right location
 RUN chmod +x server.js 2>/dev/null || true
