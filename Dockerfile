@@ -62,6 +62,10 @@ ENV NODE_ENV=production
 ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
+# Run database migrations (if DATABASE_URL is available)
+# Note: This will fail if DATABASE_URL is not set, but that's okay for build stage
+RUN if [ -n "$DATABASE_URL" ]; then npx prisma migrate deploy --schema=./prisma/schema.prisma || echo "Migration skipped - DATABASE_URL not available"; fi
+
 # Build Next.js (will create standalone output)
 RUN npm run build
 

@@ -3,10 +3,17 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/server/auth'
 
 export default async function Home() {
-  const session = await getServerSession(authOptions)
+  let session
+  try {
+    session = await getServerSession(authOptions)
+  } catch (error) {
+    // If auth fails, continue without session
+    console.error('Session error:', error)
+    session = null
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50" data-testid="homepage">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-8 shadow-lg">
@@ -15,7 +22,7 @@ export default async function Home() {
             </svg>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6" data-testid="homepage-title">
             UI/UX Testing Tool
           </h1>
           
