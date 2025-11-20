@@ -4,7 +4,9 @@ FROM node:18-slim AS base
 FROM base AS deps
 # Install system dependencies for Playwright and Prisma on Debian
 RUN apt-get update && apt-get install -y \
+    openssl \
     libssl-dev \
+    libssl1.1 \
     ca-certificates \
     fonts-liberation \
     libasound2 \
@@ -68,7 +70,9 @@ ENV DOCKER_BUILD=true
 
 # Install Playwright runtime dependencies for Debian
 RUN apt-get update && apt-get install -y \
+    openssl \
     libssl-dev \
+    libssl1.1 \
     ca-certificates \
     fonts-liberation \
     libasound2 \
