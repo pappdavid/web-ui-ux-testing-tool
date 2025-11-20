@@ -52,9 +52,9 @@ COPY . .
 ENV DOCKER_BUILD=true
 ENV NODE_ENV=production
 
-# Generate Prisma Client with OpenSSL 3.x support
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
-RUN npx prisma generate
+# Generate Prisma Client
+# Prisma will auto-detect OpenSSL version, but we ensure OpenSSL 3.x is available
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (will create standalone output)
 RUN npm run build
