@@ -120,13 +120,23 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/playwright ./node_modules/playwright
 COPY --from=builder /app/prisma ./prisma
 
+# Copy Playwright browsers from deps stage to a location accessible by nextjs user
+RUN mkdir -p /app/.cache/ms-playwright
+COPY --from=deps /root/.cache/ms-playwright /app/.cache/ms-playwright
+
 # Ensure the server.js is executable and exists
 RUN test -f server.js && chmod +x server.js || (echo "ERROR: server.js not found" && ls -la && exit 1)
 
-# Create storage directory
-RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
+# Create storage directory and set proper permissions
+RUN mkdir -p /app/storage
+
+# Set ownership for nextjs user
+RUN chown -R nextjs:nodejs /app/storage /app/.cache
 
 USER nextjs
+
+# Set Playwright environment variables
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 
 EXPOSE 3000
 
