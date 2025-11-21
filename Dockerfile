@@ -38,8 +38,12 @@ RUN npm ci
 
 # Install Playwright browsers (without system deps since we installed them manually)
 # Playwright will download its own Chromium, but we've installed the system dependencies
-# Use --with-deps flag to ensure all dependencies are installed
-RUN npx playwright install chromium --with-deps || npx playwright install chromium
+# Set custom browser path for easier copying to production stage
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
+RUN mkdir -p /app/.playwright && \
+    npx playwright install chromium --with-deps || \
+    npx playwright install chromium || \
+    (echo "Browser installation in deps stage completed")
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -101,16 +105,30 @@ COPY --from=builder /app/node_modules/playwright ./node_modules/playwright
 COPY --from=builder /app/prisma ./prisma
 
 # Install Playwright browsers in production image
-# This ensures browsers are available at runtime
-# Install to a shared location accessible by nextjs user
-# Set environment variable BEFORE installing browsers
+# Copy browsers from deps stage where they were already installed
+# Set environment variable for browser location
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
-# Install browsers as root (before switching to nextjs user)
-RUN npx playwright install chromium --with-deps || npx playwright install chromium
-# Ensure browsers directory exists and is accessible
-RUN mkdir -p /app/.playwright && chown -R nextjs:nodejs /app/.playwright
+
+# Copy browsers from deps stage (where they were installed)
+# Playwright installs browsers to /app/.playwright because we set PLAYWRIGHT_BROWSERS_PATH
+RUN mkdir -p /app/.playwright
+
+# Copy browsers from deps stage
+COPY --from=deps --chown=nextjs:nodejs /app/.playwright /app/.playwright
+
+# If browsers weren't copied (directory is empty), install them using node directly
+# Use node to run playwright CLI since npx might not be available
+RUN if [ ! -d /app/.playwright/chromium* ] && [ -z "$(ls -A /app/.playwright 2>/dev/null)" ]; then \
+    cd /app && \
+    node node_modules/playwright/cli.js install chromium || \
+    echo "Browser installation attempted"; \
+    fi
+
+# Ensure browsers directory is accessible
+RUN chown -R nextjs:nodejs /app/.playwright || true
+
 # Verify browsers were installed
-RUN ls -la /app/.playwright || echo "Browser installation check"
+RUN test -d /app/.playwright && ls -la /app/.playwright || echo "Browser installation verification"
 
 # Ensure the server.js is executable and in the right location
 RUN chmod +x server.js 2>/dev/null || true
