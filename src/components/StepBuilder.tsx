@@ -10,6 +10,7 @@ interface TestStep {
   assertionType?: string
   assertionExpected?: string
   meta?: Record<string, any>
+  description?: string
 }
 
 interface StepBuilderProps {
@@ -230,6 +231,20 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                   </button>
                 </div>
               </div>
+
+              {(step.description || step.meta?.description) && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs font-semibold text-blue-800 mb-1">AI Description:</p>
+                      <p className="text-sm text-blue-700">{step.description || step.meta?.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>

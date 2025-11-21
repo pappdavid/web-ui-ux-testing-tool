@@ -27,7 +27,8 @@ interface AIGeneratedStep {
   value?: string
   assertionType?: string
   assertionExpected?: string
-  description: string
+  description?: string
+  meta?: Record<string, any>
 }
 
 export default function TestForm({ initialData, testId }: TestFormProps) {
@@ -124,7 +125,38 @@ export default function TestForm({ initialData, testId }: TestFormProps) {
 
       if (response.ok) {
         const data = await response.json()
-        router.push(`/tests/${data.test?.id || testId}/edit`)
+        const createdTestId = data.test?.id || testId
+
+        // If we have generated steps and this is a new test, save them automatically
+        if (generatedSteps.length > 0 && !testId) {
+          try {
+            const stepsResponse = await fetch(`/api/tests/${createdTestId}/steps`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                steps: generatedSteps.map((step, index) => ({
+                  orderIndex: index,
+                  type: step.type,
+                  selector: step.selector || undefined,
+                  value: step.value || undefined,
+                  assertionType: step.assertionType || undefined,
+                  assertionExpected: step.assertionExpected || undefined,
+                  meta: step.description ? { ...step.meta, description: step.description } : step.meta || undefined,
+                })),
+              }),
+            })
+
+            if (!stepsResponse.ok) {
+              console.error('Failed to save AI-generated steps')
+            }
+          } catch (stepError) {
+            console.error('Error saving AI-generated steps:', stepError)
+          }
+        }
+
+        router.push(`/tests/${createdTestId}/edit`)
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Failed to save test')
@@ -241,21 +273,50 @@ export default function TestForm({ initialData, testId }: TestFormProps) {
         )}
 
         {/* AI Generation Banner */}
-        <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 rounded-3xl p-6 text-white shadow-2xl transform hover:scale-[1.02] transition-all duration-300">
+        <div className={`rounded-3xl p-6 text-white shadow-2xl transform hover:scale-[1.02] transition-all duration-300 ${
+          generatedSteps.length > 0 
+            ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-600' 
+            : 'bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                <h3 className="text-xl font-bold">✨ AI-Powered Test Generation</h3>
+                {generatedSteps.length > 0 ? (
+                  <>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="text-xl font-bold">✅ AI Steps Generated Successfully!</h3>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <h3 className="text-xl font-bold">✨ AI-Powered Test Generation</h3>
+                  </>
+                )}
               </div>
-              <p className="text-white/90 text-sm">
-                Let AI generate comprehensive test steps for your URL using OpenAI
-              </p>
-              {generatedSteps.length > 0 && (
-                <p className="mt-2 text-sm bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 inline-block">
-                  ✅ {generatedSteps.length} steps generated
+              {generatedSteps.length > 0 ? (
+                <>
+                  <p className="text-white/90 text-sm mb-2">
+                    {generatedSteps.length} test steps are ready to be saved with your test
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs bg-white/30 backdrop-blur-sm rounded-lg px-3 py-1.5 font-semibold">
+                      📝 {generatedSteps.length} Steps
+                    </span>
+                    <span className="text-xs bg-white/30 backdrop-blur-sm rounded-lg px-3 py-1.5 font-semibold">
+                      🤖 AI Generated
+                    </span>
+                    <span className="text-xs bg-white/30 backdrop-blur-sm rounded-lg px-3 py-1.5 font-semibold">
+                      💾 Auto-save on create
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-white/90 text-sm">
+                  Let AI generate comprehensive test steps for your URL using OpenAI
                 </p>
               )}
             </div>
@@ -263,12 +324,20 @@ export default function TestForm({ initialData, testId }: TestFormProps) {
               type="button"
               onClick={() => setShowAIModal(true)}
               disabled={!formData.targetUrl}
-              className="ml-4 px-6 py-3 bg-white text-purple-600 font-bold rounded-xl hover:shadow-xl transform hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+              className={`ml-4 px-6 py-3 font-bold rounded-xl shadow-xl transform transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2 ${
+                generatedSteps.length > 0
+                  ? 'bg-white text-green-600 hover:scale-105'
+                  : 'bg-white text-purple-600 hover:scale-110'
+              }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                {generatedSteps.length > 0 ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                )}
               </svg>
-              Generate
+              {generatedSteps.length > 0 ? 'Regenerate' : 'Generate'}
             </button>
           </div>
         </div>
