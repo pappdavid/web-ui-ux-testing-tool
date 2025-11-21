@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="relative z-0 overflow-hidden bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
+      <body className="relative z-0 overflow-hidden">
         <Providers>
           <Navbar />
           <main className="min-h-screen relative z-10">
