@@ -74,4 +74,96 @@ body {
   .transition-smooth {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* Custom animations */
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% {
+      transform: translateY(-5%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in-delay-1 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 0.2s forwards;
+  }
+
+  .animate-fade-in-delay-2 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 0.4s forwards;
+  }
+
+  .animate-fade-in-delay-3 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 0.6s forwards;
+  }
+
+  .animate-fade-in-delay-4 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 0.8s forwards;
+  }
+
+  .animate-fade-in-delay-5 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 1.0s forwards;
+  }
+
+  .animate-fade-in-delay-6 {
+    opacity: 0;
+    animation: fade-in 0.8s ease-out 1.2s forwards;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .shadow-3xl {
+    box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
+  }
 }

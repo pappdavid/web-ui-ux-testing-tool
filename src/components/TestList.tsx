@@ -126,54 +126,66 @@ export default function TestList() {
       </div>
 
       {tests.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-16 text-center border border-purple-100">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No tests yet</h3>
-          <p className="text-gray-600 mb-6">Create your first test to start automating your UI/UX testing</p>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">No tests yet</h3>
+          <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">Create your first test to start automating your UI/UX testing workflows</p>
           <Link
             href="/tests/new"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 hover:-translate-y-1"
           >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
             Create Your First Test
           </Link>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tests.map((test) => (
+          {tests.map((test, index) => (
             <div
               key={test.id}
-              className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-100 overflow-hidden group"
+              style={{ animationDelay: `${index * 0.1}s` }}
+              className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-3xl transition-all duration-300 border border-purple-100 overflow-hidden group transform hover:-translate-y-2 hover:scale-105 opacity-0 animate-fade-in"
             >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <Link
                     href={`/tests/${test.id}/edit`}
-                    className="flex-1 group-hover:text-blue-600 transition-colors"
+                    className="flex-1 group-hover:text-purple-600 transition-colors"
                   >
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-1">{test.name}</h3>
-                    <p className="text-sm text-gray-500 truncate">{test.targetUrl}</p>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-1">{test.name}</h3>
+                    <p className="text-sm text-gray-600 truncate flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                      </svg>
+                      {test.targetUrl}
+                    </p>
                   </Link>
                 </div>
 
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border-2 ${getStatusColor(
                       test.status
                     )}`}
                   >
                     {getStatusIcon(test.status)}
-                    {test.status}
+                    {test.status.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-3 py-1.5 rounded-xl border border-purple-200">
                     {test.deviceProfile}
                   </span>
                 </div>
 
-                <div className="text-xs text-gray-500 mb-4">
+                <div className="text-sm text-gray-600 mb-6 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   {test.runs && test.runs.length > 0 ? (
                     <span>Last run: {formatDate(test.runs[0].startedAt)}</span>
                   ) : (
@@ -181,18 +193,18 @@ export default function TestList() {
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-4 border-t border-gray-100">
+                <div className="flex gap-2 pt-4 border-t-2 border-purple-100">
                   <Link
                     href={`/tests/${test.id}/run`}
-                    className="flex-1 text-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium text-sm transition-colors"
+                    className="flex-1 text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg font-bold text-sm transition-all duration-300 transform hover:scale-105"
                   >
-                    Run
+                    ▶ Run
                   </Link>
                   <Link
                     href={`/tests/${test.id}/edit`}
-                    className="flex-1 text-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 font-medium text-sm transition-colors"
+                    className="flex-1 text-center px-4 py-3 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 font-bold text-sm transition-all duration-300 border-2 border-purple-200 hover:border-purple-300"
                   >
-                    Edit
+                    ✏️ Edit
                   </Link>
                 </div>
               </div>
