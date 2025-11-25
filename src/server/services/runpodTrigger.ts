@@ -18,6 +18,10 @@ export async function triggerRunPodServerlessWorker(
   try {
     console.log(`[RunPodTrigger] Triggering serverless worker for session: ${agentSessionId}`)
 
+    // Set timeout for serverless request
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minute timeout
+
     const response = await fetch(RUNPOD_SERVERLESS_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -29,7 +33,10 @@ export async function triggerRunPodServerlessWorker(
           agentSessionId,
         },
       }),
+      signal: controller.signal,
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorText = await response.text()
