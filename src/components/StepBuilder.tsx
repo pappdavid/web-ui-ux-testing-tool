@@ -9,6 +9,7 @@ interface TestStep {
   value?: string
   assertionType?: string
   assertionExpected?: string
+  source?: string
   meta?: Record<string, any>
   description?: string
 }
@@ -195,6 +196,16 @@ export default function StepBuilder({ testId, initialSteps = [] }: StepBuilderPr
                     <div className="flex items-center space-x-2">
                       <span className="text-lg">{getStepTypeIcon(step.type)}</span>
                       <span className="font-semibold text-gray-900">Step {index + 1}</span>
+                      {step.source === 'agent' && (
+                        <span className="px-2 py-1 bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-full text-xs font-semibold">
+                          🤖 Agent
+                        </span>
+                      )}
+                      {step.source === 'ai' && (
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 border border-purple-300 rounded-full text-xs font-semibold">
+                          ✨ AI
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">Order: {step.orderIndex + 1}</p>
                   </div>

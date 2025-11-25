@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import TestForm from '@/components/TestForm'
 import StepBuilder from '@/components/StepBuilder'
+import CloudAgenticRecorder from '@/components/CloudAgenticRecorder'
 
 interface Test {
   id: string
@@ -21,6 +22,7 @@ interface Test {
     value: string | null
     assertionType: string | null
     assertionExpected: string | null
+    source: string
     meta: any
   }>
 }
@@ -119,7 +121,14 @@ export default function EditTestPage() {
             />
           </div>
 
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-3xl p-8 border border-purple-100 animate-fade-in-delay-2">
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-3xl p-8 border border-cyan-100 animate-fade-in-delay-2">
+            <CloudAgenticRecorder
+              testId={testId}
+              onCompileComplete={fetchTest}
+            />
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-3xl p-8 border border-purple-100 animate-fade-in-delay-3">
             <StepBuilder
               testId={testId}
               initialSteps={test.steps.map((step) => ({
@@ -129,6 +138,7 @@ export default function EditTestPage() {
                 value: step.value || undefined,
                 assertionType: step.assertionType || undefined,
                 assertionExpected: step.assertionExpected || undefined,
+                source: step.source,
                 meta: step.meta,
                 description: step.meta?.description || undefined,
               }))}

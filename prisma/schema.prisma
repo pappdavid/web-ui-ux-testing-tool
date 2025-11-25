@@ -18,22 +18,23 @@ model User {
 }
 
 model Test {
-  id            String     @id @default(cuid())
+  id            String          @id @default(cuid())
   userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
   targetUrl     String
   adminPanelUrl String?
-  deviceProfile String     @default("desktop") // desktop, mobile, tablet
-  status        String     @default("pending") // pending, running, passed, failed
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  deviceProfile String          @default("desktop") // desktop, mobile, tablet
+  status        String          @default("pending") // pending, running, passed, failed
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   steps         TestStep[]
   runs          TestRun[]
+  agentSessions AgentSession[]
   
   // Admin verification config (stored as JSON)
   // TODO: Move to proper encrypted storage (KMS/vault)
-  adminConfig   Json?      // { mode: "api" | "ui" | "none", baseUrl?: string, credentials?: {...} }
+  adminConfig   Json?           // { mode: "api" | "ui" | "none", baseUrl?: string, credentials?: {...} }
 }
 
 model TestStep {
@@ -46,6 +47,7 @@ model TestStep {
   value               String?
   assertionType       String?  // equals, contains, exists, notExists
   assertionExpected   String?
+  source              String   @default("manual") // manual, ai, agent
   meta                Json?    // Additional metadata for the step
   createdAt           DateTime @default(now())
   
@@ -107,4 +109,35 @@ model Attachment {
   createdAt DateTime @default(now())
   
   @@index([testRunId, type])
+}
+
+model AgentSession {
+  id           String            @id @default(cuid())
+  testId       String
+  test         Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  status       String            @default("pending") // pending, running, completed, failed
+  description  String?           // User's scenario description
+  errorMessage String?           // Error details if failed
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  traceSteps   AgentTraceStep[]
+  
+  @@index([testId])
+  @@index([status])
+}
+
+model AgentTraceStep {
+  id                String       @id @default(cuid())
+  agentSessionId    String
+  agentSession      AgentSession @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+  orderIndex        Int
+  actionType        String       // navigate, click, input, screenshot, assert, get_dom, scroll, etc.
+  selector          String?
+  value             String?
+  assertionType     String?      // equals, contains, exists, notExists
+  assertionExpected String?
+  meta              Json?        // Tool response, DOM info, etc.
+  createdAt         DateTime     @default(now())
+  
+  @@index([agentSessionId, orderIndex])
 }

@@ -5,6 +5,7 @@ A comprehensive web-based testing tool for UI/UX validation with admin panel ver
 ## Features
 
 - **Test Builder UI**: Create and manage test cases through a web interface
+- **Cloud Agentic Browser** 🤖: AI-driven test exploration using OpenAI + Playwright on RunPod ([docs](docs/AGENTIC_BROWSER_RUNPOD.md))
 - **Playwright Automation**: Execute tests using headless browser automation
 - **UX Metrics**: Collect navigation timing, LCP, and accessibility metrics
 - **Admin Verification**: Verify test results via API or UI in admin panels
@@ -333,6 +334,55 @@ jobs:
 - Verify target URL is accessible
 - Check selectors are correct
 - Review browser console for errors
+
+## Cloud Agentic Browser (RunPod)
+
+The application includes an advanced AI-driven test exploration feature that uses OpenAI and Playwright to automatically explore web applications and generate test steps.
+
+### Architecture
+
+- **Railway**: Hosts the Next.js app and manages agent sessions
+- **RunPod**: Runs containerized agent workers with Playwright + OpenAI
+- **Worker polls** Railway for pending sessions, explores apps, posts traces back
+
+### Quick Start
+
+1. **On Railway**: Set `RAILWAY_INTERNAL_API_TOKEN` environment variable
+   ```bash
+   openssl rand -hex 32
+   ```
+
+2. **Deploy RunPod Worker**:
+   ```bash
+   cd src/agentWorker
+   docker build -t agent-worker .
+   docker push your-username/agent-worker:latest
+   ```
+
+3. **Configure RunPod** with environment variables:
+   - `RAILWAY_API_BASE_URL`
+   - `RAILWAY_INTERNAL_API_TOKEN`
+   - `OPENAI_API_KEY`
+   - `OPENAI_MODEL` (optional, defaults to gpt-4o-mini)
+
+4. **Use in UI**:
+   - Go to test edit page
+   - Find "Cloud Agentic Recorder" section
+   - Enter scenario description
+   - Click "Start Cloud Agent Exploration"
+   - Wait for completion
+   - Click "Compile to Steps"
+
+### Documentation
+
+Full documentation: **[docs/AGENTIC_BROWSER_RUNPOD.md](docs/AGENTIC_BROWSER_RUNPOD.md)**
+
+Includes:
+- Complete lifecycle explanation
+- API reference
+- Deployment guides
+- Troubleshooting
+- Example scenarios
 
 ## Development
 
