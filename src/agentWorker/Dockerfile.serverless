@@ -1,0 +1,43 @@
+# RunPod Serverless Agent Worker Dockerfile
+FROM node:18-bullseye
+
+# Install Playwright system dependencies
+RUN npx playwright@1.45.0 install-deps
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies including express
+RUN npm ci
+
+# Install express for HTTP server
+RUN npm install express @types/express
+
+# Install tsx for TypeScript execution
+RUN npm install -g tsx
+
+# Copy application code
+COPY src/ ./src/
+COPY prisma/ ./prisma/
+
+# Install Playwright browsers
+RUN npx playwright@1.45.0 install chromium
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Expose ports for RunPod Serverless
+EXPOSE 8000 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:${PORT_HEALTH:-8001}/ping || exit 1
+
+# Run the serverless worker
+CMD ["tsx", "src/agentWorker/serverless.ts"]
+

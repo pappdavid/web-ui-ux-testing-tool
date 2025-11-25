@@ -1,0 +1,60 @@
+name: Build Agent Worker (Serverless)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/agentWorker/**'
+      - 'src/server/agent/**'
+      - 'src/server/middleware/internalAuth.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build-agent-worker-serverless.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/agent-worker-serverless
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: src/agentWorker/Dockerfile.serverless
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Output image name
+        run: |
+          echo "Serverless image pushed to: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "Use this image in RunPod Serverless: ghcr.io/${{ github.repository_owner }}/agent-worker-serverless:latest"
+

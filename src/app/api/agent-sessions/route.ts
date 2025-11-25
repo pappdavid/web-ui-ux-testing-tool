@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/server/middleware/auth'
 import { requireInternalAuth } from '@/server/middleware/internalAuth'
 import { db } from '@/server/db'
+import { triggerRunPodServerlessWorker } from '@/server/services/runpodTrigger'
 import { z } from 'zod'
 
 const createAgentSessionSchema = z.object({
@@ -45,9 +46,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Trigger RunPod serverless worker (if configured)
+    // Falls back to polling mode if not configured
+    const triggerResult = await triggerRunPodServerlessWorker(agentSession.id)
+
     return NextResponse.json({
       agentSession,
       message: 'Agent session created successfully',
+      triggered: triggerResult.success,
+      jobId: triggerResult.jobId,
     })
   } catch (error: any) {
     if (error.name === 'ZodError') {
