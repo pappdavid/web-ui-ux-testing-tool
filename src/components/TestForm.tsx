@@ -342,7 +342,7 @@ export default function TestForm({ initialData, testId }: TestFormProps) {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
             Test Name <span className="text-red-500">*</span>

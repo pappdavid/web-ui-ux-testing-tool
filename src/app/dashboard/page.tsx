@@ -27,7 +27,7 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="animate-fade-in-delay-1">
-          <TestList />
+        <TestList />
         </div>
       </div>
     </div>

@@ -9,21 +9,60 @@ import path from 'path'
 import fs from 'fs/promises'
 
 const STORAGE_PATH = process.env.STORAGE_PATH || './storage'
+const TEST_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes timeout
 
+// Non-blocking log function - never throws errors
 async function logToDatabase(
   testRunId: string,
   level: 'info' | 'warn' | 'error',
   message: string,
   data?: any
 ) {
-  await db.testLog.create({
-    data: {
-      testRunId,
-      level,
-      message,
-      data: data || {},
-    },
-  })
+  try {
+    await db.testLog.create({
+      data: {
+        testRunId,
+        level,
+        message,
+        data: data || {},
+      },
+    })
+  } catch (error) {
+    // Log to console if database logging fails, but don't throw
+    console.error(`[TestEngine] Failed to log to database for testRun ${testRunId}:`, error)
+    console.log(`[TestEngine] ${level.toUpperCase()}: ${message}`, data || '')
+  }
+}
+
+// Robust status update function - ensures status is always updated
+async function updateTestStatus(
+  testRunId: string,
+  testId: string,
+  status: 'passed' | 'failed',
+  finishedAt: Date = new Date()
+) {
+  try {
+    // Update test run status
+    await db.testRun.update({
+      where: { id: testRunId },
+      data: {
+        status,
+        finishedAt,
+      },
+    })
+
+    // Update test status
+    await db.test.update({
+      where: { id: testId },
+      data: {
+        status,
+      },
+    })
+  } catch (error) {
+    // If update fails, log but don't throw - we'll try again in catch block
+    console.error(`[TestEngine] Failed to update test status for testRun ${testRunId}:`, error)
+    throw error // Re-throw so catch block can handle it
+  }
 }
 
 async function createAttachment(
@@ -54,6 +93,22 @@ async function captureDOMSnapshot(page: Page, testRunId: string): Promise<string
 export async function runTest(testRunId: string): Promise<void> {
   let browser: Browser | null = null
   let page: Page | null = null
+  let testId: string | null = null
+
+  // Set up timeout to prevent infinite RUNNING state
+  const timeoutId = setTimeout(async () => {
+    console.error(`[TestEngine] Test ${testRunId} timed out after ${TEST_TIMEOUT_MS}ms`)
+    try {
+      if (testId) {
+        await updateTestStatus(testRunId, testId, 'failed', new Date())
+        await logToDatabase(testRunId, 'error', 'Test execution timed out', {
+          timeoutMs: TEST_TIMEOUT_MS,
+        })
+      }
+    } catch (error) {
+      console.error(`[TestEngine] Failed to update status after timeout:`, error)
+    }
+  }, TEST_TIMEOUT_MS)
 
   try {
     // Load test run and test data
@@ -77,6 +132,7 @@ export async function runTest(testRunId: string): Promise<void> {
     }
 
     const test = testRun.test
+    testId = test.id // Store for timeout handler
     const steps = test.steps
 
     if (steps.length === 0) {
@@ -106,11 +162,22 @@ export async function runTest(testRunId: string): Promise<void> {
           headless: true,
         })
       } catch (fallbackError: any) {
+        // Log error (non-blocking)
         await logToDatabase(testRunId, 'error', 'Failed to launch browser', {
           error: fallbackError.message,
           originalError: error.message,
           hint: 'Playwright browsers may not be available in serverless environment. Consider using Docker or external browser service.',
         })
+        
+        // Update status before throwing
+        if (testId) {
+          try {
+            await updateTestStatus(testRunId, testId, 'failed')
+          } catch (statusError) {
+            console.error('[TestEngine] Failed to update status after browser launch failure:', statusError)
+          }
+        }
+        
         throw new Error(`Browser launch failed: ${fallbackError.message}. This may be due to Playwright browsers not being available in the serverless environment.`)
       }
     }
@@ -230,20 +297,7 @@ export async function runTest(testRunId: string): Promise<void> {
         }
 
         // Update test run status
-        await db.testRun.update({
-          where: { id: testRunId },
-          data: {
-            status: 'failed',
-            finishedAt: new Date(),
-          },
-        })
-
-        await db.test.update({
-          where: { id: test.id },
-          data: {
-            status: 'failed',
-          },
-        })
+        await updateTestStatus(testRunId, test.id, 'failed')
 
         throw new Error(`Step ${i + 1} failed: ${result.error}`)
         }
@@ -284,20 +338,7 @@ export async function runTest(testRunId: string): Promise<void> {
         }
 
         // Update test run status
-        await db.testRun.update({
-          where: { id: testRunId },
-          data: {
-            status: 'failed',
-            finishedAt: new Date(),
-          },
-        })
-
-        await db.test.update({
-          where: { id: test.id },
-          data: {
-            status: 'failed',
-          },
-        })
+        await updateTestStatus(testRunId, test.id, 'failed')
 
         throw error
       }
@@ -357,13 +398,20 @@ export async function runTest(testRunId: string): Promise<void> {
     })
 
     await logToDatabase(testRunId, 'info', 'Test execution completed successfully')
+    
+    // Clear timeout since test completed successfully
+    clearTimeout(timeoutId)
   } catch (error: any) {
+    // Clear timeout
+    clearTimeout(timeoutId)
+    
+    // Log error (non-blocking)
     await logToDatabase(testRunId, 'error', `Test execution failed: ${error.message}`, {
       error: error.message,
       stack: error.stack,
     })
 
-    // Update test run status if not already updated
+    // Update test run status if not already updated - this MUST succeed
     try {
       const testRun = await db.testRun.findUnique({
         where: { id: testRunId },
@@ -371,23 +419,41 @@ export async function runTest(testRunId: string): Promise<void> {
       })
 
       if (testRun && testRun.status === 'running') {
-        await db.testRun.update({
-          where: { id: testRunId },
-          data: {
-            status: 'failed',
-            finishedAt: new Date(),
-          },
-        })
+        // Use direct update with retry logic
+        let retries = 3
+        while (retries > 0) {
+          try {
+            await db.testRun.update({
+              where: { id: testRunId },
+              data: {
+                status: 'failed',
+                finishedAt: new Date(),
+              },
+            })
 
-        await db.test.update({
-          where: { id: testRun.test.id },
-          data: {
-            status: 'failed',
-          },
-        })
+            await db.test.update({
+              where: { id: testRun.test.id },
+              data: {
+                status: 'failed',
+              },
+            })
+            break // Success, exit retry loop
+          } catch (updateError: any) {
+            retries--
+            if (retries === 0) {
+              // Last attempt failed - log to console as fallback
+              console.error(`[TestEngine] CRITICAL: Failed to update test status after ${3} retries:`, updateError)
+              console.error(`[TestEngine] TestRun ${testRunId} should be manually updated to 'failed'`)
+            } else {
+              // Wait a bit before retry
+              await new Promise(resolve => setTimeout(resolve, 1000))
+            }
+          }
+        }
       }
     } catch (updateError) {
-      console.error('Error updating test run status:', updateError)
+      console.error('[TestEngine] CRITICAL: Error updating test run status:', updateError)
+      console.error(`[TestEngine] TestRun ${testRunId} should be manually updated to 'failed'`)
     }
 
     throw error
