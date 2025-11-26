@@ -43,7 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-/prisma/migrations
+# /prisma/migrations - COMMENTED OUT: We need migrations in git for production!
 
 # storage
 /storage
@@ -75,3 +75,4 @@ logs
 *.tmp
 *.temp
 .cache
+.deployment-credentials.local
