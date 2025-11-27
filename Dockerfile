@@ -128,10 +128,10 @@ COPY --from=deps /root/.cache/ms-playwright /app/.cache/ms-playwright
 RUN test -f server.js && chmod +x server.js || (echo "ERROR: server.js not found" && ls -la && exit 1)
 
 # Create storage directory and set proper permissions
-RUN mkdir -p /app/storage
+RUN mkdir -p /app/storage /app/.npm
 
 # Set ownership for nextjs user
-RUN chown -R nextjs:nodejs /app/storage /app/.cache
+RUN chown -R nextjs:nodejs /app/storage /app/.cache /app/.npm
 
 USER nextjs
 
