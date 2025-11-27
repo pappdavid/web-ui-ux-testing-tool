@@ -138,6 +138,10 @@ USER nextjs
 # Set Playwright environment variables
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 
+# Set HOME and npm cache directory to avoid /nonexistent errors
+ENV HOME=/app
+ENV NPM_CONFIG_CACHE=/app/.npm
+
 EXPOSE 3000
 
 ENV PORT=3000
